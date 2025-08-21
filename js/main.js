@@ -2,7 +2,7 @@ import { notablePacks } from './packs/notable-packs.js';
 import RarityCoder from './modules/rarity-coder.js';
 import UIManager from './modules/ui-manager.js';
 import WowheadAPI from './modules/wowhead-api.js';
-// -- r
+// --
 document.addEventListener('DOMContentLoaded', () => {
     // --- Application State ---
     let items = [];
