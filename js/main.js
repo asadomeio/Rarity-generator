@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Application State ---
     let items = [];
     const ui = UIManager(document);
-    const githubRepoURL = "https://github.com/asadomelo/rarity-generator"; // Replace with your actual repo URL
+    const githubRepoURL = "https://github.com/asadomeio/Rarity-generator"; // Replace with your actual repo URL
 
     // --- Core Event Listeners ---
     ui.elements.magicUrlInput.addEventListener('paste', () => setTimeout(handleUrlInput, 0));
