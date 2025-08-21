@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // DOM REFERENCES
     const magicUrlInput = document.getElementById('magicUrlInput');
     const itemNameInput = document.getElementById('itemName');
     const itemIDInput = document.getElementById('itemID');
@@ -15,6 +16,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let items = [];
 
+    const refreshWowheadLinks = () => {
+        if (typeof $WowheadPower !== 'undefined') {
+            $WowheadPower.refreshLinks();
+        }
+    };
+
+    // --- FORWARD PIPELINE: CODE GENERATION ---
     const parseWowheadUrl = (url) => url.match(/wowhead\.com\/(item|npc|zone|spell)=(\d+)/);
 
     const handleUrlInput = () => {
@@ -36,11 +44,13 @@ document.addEventListener('DOMContentLoaded', () => {
             itemDiv.innerHTML = `<div class="item-info"><span>${itemLink}</span><small>From: ${npcLinks}</small></div><button class="remove-btn" data-index="${index}">Remove</button>`;
             itemListDiv.appendChild(itemDiv);
         });
-        document.querySelectorAll('.remove-btn').forEach(btn => btn.addEventListener('click', e => {
+
+        document.querySelectorAll('#itemList .remove-btn').forEach(btn => btn.addEventListener('click', e => {
             items.splice(parseInt(e.target.dataset.index, 10), 1);
             renderItemList();
         }));
-        if (typeof $WowheadPower !== 'undefined') { $WowheadPower.refreshLinks(); }
+        
+        refreshWowheadLinks();
     };
 
     const addItem = () => {
@@ -89,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- REVERSE PIPELINE: CODE INSPECTION ---
     const rarityDecode = (data) => {
         const decoded = [];
         for (let i = 0; i < data.length; ) {
@@ -107,7 +118,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const parseLuaString = (luaString) => {
         const cleanString = luaString.replace(/^return\s*\{\s*|\s*\}\s*$/g, '');
         if (cleanString.trim() === '') return [];
-
         const items = [];
         let braceCount = 0;
         let currentItemString = '';
@@ -116,14 +126,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (char === '{') braceCount++;
             if (char === '}') braceCount--;
             currentItemString += char;
-
             if (char === '}' && braceCount === 0) {
                 const itemData = {};
                 const nameMatch = currentItemString.match(/\["name"\]\s*=\s*"((?:\\"|[^"])*)"/);
                 const itemIDMatch = currentItemString.match(/\["itemID"\]\s*=\s*(\d+)/);
                 const chanceMatch = currentItemString.match(/\["chance"\]\s*=\s*(\d+)/);
                 const npcsMatch = currentItemString.match(/\["npcs"\]\s*=\s*\{([^}]+)\}/);
-
                 if (nameMatch && itemIDMatch && chanceMatch && npcsMatch) {
                     itemData.name = nameMatch[1].replace(/\\"/g, '"');
                     itemData.itemID = parseInt(itemIDMatch[1], 10);
@@ -135,24 +143,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         return items;
-    };
-
-    const inspectCode = () => {
-        const code = inspectInput.value.trim();
-        if (!code) return;
-        try {
-            const binaryString = atob(code);
-            const initialBytes = new Uint8Array(binaryString.length).map((_, i) => binaryString.charCodeAt(i));
-            const decodedBytes = rarityDecode(initialBytes);
-            const luaString = pako.inflate(decodedBytes, { to: 'string' });
-            const inspectedItems = parseLuaString(luaString);
-
-            if (!inspectedItems.length && code.length > 10) throw new Error("Could not parse items from Lua string.");
-            renderInspectedList(inspectedItems);
-        } catch (e) {
-            inspectionResultDiv.innerHTML = `<div class="item-entry" style="color: var(--error-color);"><strong>Error:</strong> Invalid or corrupted Rarity code.</div>`;
-            console.error("Inspection error:", e);
-        }
     };
 
     const renderInspectedList = (inspectedItems) => {
@@ -169,9 +159,27 @@ document.addEventListener('DOMContentLoaded', () => {
             itemDiv.innerHTML = `<div class="item-info"><span>${itemLink}</span><small>From: ${npcLinks} (Chance: 1 in ${item.chance})</small></div>`;
             inspectionResultDiv.appendChild(itemDiv);
         });
-        if (typeof $WowheadPower !== 'undefined') { $WowheadPower.refreshLinks(); }
+        refreshWowheadLinks();
+    };
+    
+    const inspectCode = () => {
+        const code = inspectInput.value.trim();
+        if (!code) return;
+        try {
+            const binaryString = atob(code);
+            const initialBytes = new Uint8Array(binaryString.length).map((_, i) => binaryString.charCodeAt(i));
+            const decodedBytes = rarityDecode(initialBytes);
+            const luaString = pako.inflate(decodedBytes, { to: 'string' });
+            const inspectedItems = parseLuaString(luaString);
+            if (!inspectedItems.length && code.length > 10) throw new Error("Could not parse items from Lua string.");
+            renderInspectedList(inspectedItems);
+        } catch (e) {
+            inspectionResultDiv.innerHTML = `<div class="item-entry" style="color: var(--error-color);"><strong>Error:</strong> Invalid or corrupted Rarity code.</div>`;
+            console.error("Inspection error:", e);
+        }
     };
 
+    // --- EVENT LISTENERS ---
     magicUrlInput.addEventListener('paste', () => setTimeout(handleUrlInput, 0));
     magicUrlInput.addEventListener('keyup', handleUrlInput);
     addItemBtn.addEventListener('click', addItem);
@@ -183,6 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('Code copied to clipboard!');
     });
     inspectBtn.addEventListener('click', inspectCode);
-
+    
+    // Initial render
     renderItemList();
 });
