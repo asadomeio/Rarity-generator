@@ -1,197 +1,138 @@
+import { notablePacks } from './packs/notable-packs.js';
+import * RarityCoder from './modules/rarity-coder.js';
+import * UIManager from './modules/ui-manager.js';
+import * WowheadAPI from './modules/wowhead-api.js';
+
 document.addEventListener('DOMContentLoaded', () => {
-    // DOM REFERENCES
-    const magicUrlInput = document.getElementById('magicUrlInput');
-    const itemNameInput = document.getElementById('itemName');
-    const itemIDInput = document.getElementById('itemID');
-    const npcIDsInput = document.getElementById('npcIDs');
-    const itemChanceInput = document.getElementById('itemChance');
-    const addItemBtn = document.getElementById('addItemBtn');
-    const itemListDiv = document.getElementById('itemList');
-    const generateCodeBtn = document.getElementById('generateCodeBtn');
-    const outputCodeTextarea = document.getElementById('outputCode');
-    const copyCodeBtn = document.getElementById('copyCodeBtn');
-    const inspectInput = document.getElementById('inspectInput');
-    const inspectBtn = document.getElementById('inspectBtn');
-    const inspectionResultDiv = document.getElementById('inspectionResult');
-
+    // --- Application State ---
     let items = [];
+    const ui = UIManager(document);
+    const githubRepoURL = "https://github.com/asadomelo/rarity-generator"; // Replace with your actual repo URL
 
-    const refreshWowheadLinks = () => {
-        if (typeof $WowheadPower !== 'undefined') {
-            $WowheadPower.refreshLinks();
-        }
-    };
+    // --- Core Event Listeners ---
+    ui.elements.magicUrlInput.addEventListener('paste', () => setTimeout(handleUrlInput, 0));
+    ui.elements.magicUrlInput.addEventListener('keyup', handleUrlInput);
+    ui.elements.addItemBtn.addEventListener('click', handleAddItem);
+    ui.elements.generateCodeBtn.addEventListener('click', handleGenerateCode);
+    ui.elements.copyCodeBtn.addEventListener('click', handleCopyCode);
+    ui.elements.inspectBtn.addEventListener('click', handleInspectCode);
 
-    // --- FORWARD PIPELINE: CODE GENERATION ---
-    const parseWowheadUrl = (url) => url.match(/wowhead\.com\/(item|npc|zone|spell)=(\d+)/);
-
-    const handleUrlInput = () => {
-        const data = parseWowheadUrl(magicUrlInput.value);
-        magicUrlInput.className = data ? 'success' : (magicUrlInput.value ? 'error' : '');
-        if (data) {
-            if (data[1] === 'item') itemIDInput.value = data[2];
-            else if (data[1] === 'npc') npcIDsInput.value = data[2];
-        }
-    };
-
-    const renderItemList = () => {
-        itemListDiv.innerHTML = items.length ? '' : `<p class="placeholder-text">No items added yet.</p>`;
-        items.forEach((item, index) => {
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'item-entry';
-            const itemLink = `<a href="https://www.wowhead.com/item=${item.itemID}">${item.name || `Item ID: ${item.itemID}`}</a>`;
-            const npcLinks = item.npcIDs.map(id => `<a href="https://www.wowhead.com/npc=${id}">NPC #${id}</a>`).join(', ');
-            itemDiv.innerHTML = `<div class="item-info"><span>${itemLink}</span><small>From: ${npcLinks}</small></div><button class="remove-btn" data-index="${index}">Remove</button>`;
-            itemListDiv.appendChild(itemDiv);
+    // --- Tab Navigation ---
+    ui.elements.tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabName = tab.dataset.tab;
+            ui.switchTab(tabName);
         });
+    });
 
-        document.querySelectorAll('#itemList .remove-btn').forEach(btn => btn.addEventListener('click', e => {
-            items.splice(parseInt(e.target.dataset.index, 10), 1);
-            renderItemList();
-        }));
-        
-        refreshWowheadLinks();
+    // --- Suggestion Modal Listeners ---
+    ui.elements.suggestPackBtn.addEventListener('click', () => ui.openSuggestionModal());
+    ui.elements.modalCloseBtn.addEventListener('click', () => ui.closeSuggestionModal());
+    ui.elements.modalOverlay.addEventListener('click', (e) => {
+        if (e.target === ui.elements.modalOverlay) {
+            ui.closeSuggestionModal();
+        }
+    });
+    ui.elements.generateSuggestionBtn.addEventListener('click', handleGenerateSuggestion);
+    ui.elements.copySubmissionBtn.addEventListener('click', () => {
+        ui.copyToClipboard(ui.elements.submissionCode.value, "Submission code copied!");
+    });
+    
+    // --- Handler Functions ---
+    const handleUrlInput = () => {
+        const data = WowheadAPI.parseUrl(ui.elements.magicUrlInput.value);
+        ui.setMagicInputState(data ? 'success' : (ui.elements.magicUrlInput.value ? 'error' : ''));
+        if (data) {
+            if (data.type === 'item') ui.elements.itemIDInput.value = data.id;
+            else if (data.type === 'npc') ui.elements.npcIDsInput.value = data.id;
+        }
     };
 
-    const addItem = () => {
-        const name = itemNameInput.value.trim();
-        const itemID = parseInt(itemIDInput.value, 10);
-        const npcIDs = npcIDsInput.value.split(',').map(id => parseInt(id.trim(), 10)).filter(id => id > 0);
-        const chance = parseInt(itemChanceInput.value, 10);
-        if (!name || !itemID || npcIDs.length === 0 || !chance) {
+    const handleAddItem = async () => {
+        const itemID = parseInt(ui.elements.itemIDInput.value, 10);
+        if (!itemID) {
+            alert('Item ID is required.');
+            return;
+        }
+
+        ui.showSpinner(ui.elements.addItemBtn);
+        const name = await WowheadAPI.fetchItemName(itemID);
+        ui.hideSpinner(ui.elements.addItemBtn, "Add Item to List");
+        
+        if (!name) {
+            alert(`Could not automatically fetch the name for Item ID ${itemID}. Please enter it manually.`);
+            return;
+        }
+        ui.elements.itemNameInput.value = name;
+        
+        const npcIDs = ui.elements.npcIDsInput.value.split(',').map(id => parseInt(id.trim(), 10)).filter(id => id > 0);
+        const chance = parseInt(ui.elements.itemChanceInput.value, 10);
+
+        if (!name || isNaN(itemID) || npcIDs.length === 0 || isNaN(chance) || chance <= 0) {
             alert('Please ensure all manual entry fields are filled correctly.');
             return;
         }
+
         items.push({ name, itemID, npcIDs, chance });
-        renderItemList();
-        [magicUrlInput, itemNameInput, itemIDInput, npcIDsInput, itemChanceInput].forEach(i => i.value = '');
-        magicUrlInput.className = '';
-        magicUrlInput.focus();
-    };
-
-    const serializeToLua = (itemList) => `return {${itemList.map(item => {
-        const npcTable = `{${item.npcIDs.map((id, i) => `[${i + 1}]=${id}`).join(',')},}`;
-        const escapedName = item.name.replace(/"/g, '\\"');
-        return `{["chance"]=${item.chance},["itemID"]=${item.itemID},["name"]="${escapedName}",["npcs"]=${npcTable},["method"]="NPC",["type"]="ITEM",}`;
-    }).join(',')}}`;
-
-    const rarityEncode = (data) => {
-        const result = [];
-        data.forEach(byte => {
-            if (byte === 255) { result.push(255, 1); } 
-            else if (byte === 0) { result.push(255, 2); } 
-            else { result.push(byte); }
+        ui.renderItemList(items, (index) => {
+            items.splice(index, 1);
+            ui.renderItemList(items, () => {});
         });
-        return new Uint8Array(result);
+        ui.clearManualInputs();
     };
 
-    const generateRarityCode = () => {
-        if (!items.length) { alert('Add at least one item first.'); return; }
-        try {
-            const luaString = serializeToLua(items);
-            const compressed = pako.deflate(luaString);
-            const encoded = rarityEncode(compressed);
-            const binaryString = Array.from(encoded, byte => String.fromCharCode(byte)).join('');
-            outputCodeTextarea.value = btoa(binaryString);
-        } catch (e) {
-            alert("Error generating code.");
-            console.error(e);
-        }
-    };
-
-    // --- REVERSE PIPELINE: CODE INSPECTION ---
-    const rarityDecode = (data) => {
-        const decoded = [];
-        for (let i = 0; i < data.length; ) {
-            if (data[i] === 255) {
-                if (data[i + 1] === 1) decoded.push(255);
-                else if (data[i + 1] === 2) decoded.push(0);
-                i += 2;
-            } else {
-                decoded.push(data[i]);
-                i += 1;
-            }
-        }
-        return new Uint8Array(decoded);
-    };
-
-    const parseLuaString = (luaString) => {
-        const cleanString = luaString.replace(/^return\s*\{\s*|\s*\}\s*$/g, '');
-        if (cleanString.trim() === '') return [];
-        const items = [];
-        let braceCount = 0;
-        let currentItemString = '';
-        for (let i = 0; i < cleanString.length; i++) {
-            const char = cleanString[i];
-            if (char === '{') braceCount++;
-            if (char === '}') braceCount--;
-            currentItemString += char;
-            if (char === '}' && braceCount === 0) {
-                const itemData = {};
-                const nameMatch = currentItemString.match(/\["name"\]\s*=\s*"((?:\\"|[^"])*)"/);
-                const itemIDMatch = currentItemString.match(/\["itemID"\]\s*=\s*(\d+)/);
-                const chanceMatch = currentItemString.match(/\["chance"\]\s*=\s*(\d+)/);
-                const npcsMatch = currentItemString.match(/\["npcs"\]\s*=\s*\{([^}]+)\}/);
-                if (nameMatch && itemIDMatch && chanceMatch && npcsMatch) {
-                    itemData.name = nameMatch[1].replace(/\\"/g, '"');
-                    itemData.itemID = parseInt(itemIDMatch[1], 10);
-                    itemData.chance = parseInt(chanceMatch[1], 10);
-                    itemData.npcIDs = (npcsMatch[1].match(/\d+/g) || []).map(Number);
-                    items.push(itemData);
-                }
-                currentItemString = '';
-            }
-        }
-        return items;
-    };
-
-    const renderInspectedList = (inspectedItems) => {
-        if (!inspectedItems.length) {
-            inspectionResultDiv.innerHTML = `<p class="placeholder-text">No items found in the provided code.</p>`;
+    const handleGenerateCode = () => {
+        if (items.length === 0) {
+            alert('Add at least one item to the list before generating the code.');
             return;
         }
-        inspectionResultDiv.innerHTML = '';
-        inspectedItems.forEach(item => {
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'item-entry';
-            const itemLink = `<a href="https://www.wowhead.com/item=${item.itemID}">${item.name}</a>`;
-            const npcLinks = item.npcIDs.map(id => `<a href="https://www.wowhead.com/npc=${id}">NPC #${id}</a>`).join(', ');
-            itemDiv.innerHTML = `<div class="item-info"><span>${itemLink}</span><small>From: ${npcLinks} (Chance: 1 in ${item.chance})</small></div>`;
-            inspectionResultDiv.appendChild(itemDiv);
-        });
-        refreshWowheadLinks();
+        const code = RarityCoder.generateCode(items);
+        ui.elements.outputCodeTextarea.value = code;
+    };
+
+    const handleCopyCode = () => {
+        if (!ui.elements.outputCodeTextarea.value) return;
+        ui.copyToClipboard(ui.elements.outputCodeTextarea.value, "Import code copied!");
     };
     
-    const inspectCode = () => {
-        const code = inspectInput.value.trim();
+    const handleInspectCode = () => {
+        const code = ui.elements.inspectInput.value.trim();
         if (!code) return;
         try {
-            const binaryString = atob(code);
-            const initialBytes = new Uint8Array(binaryString.length).map((_, i) => binaryString.charCodeAt(i));
-            const decodedBytes = rarityDecode(initialBytes);
-            const luaString = pako.inflate(decodedBytes, { to: 'string' });
-            const inspectedItems = parseLuaString(luaString);
+            const inspectedItems = RarityCoder.inspectCode(code);
             if (!inspectedItems.length && code.length > 10) throw new Error("Could not parse items from Lua string.");
-            renderInspectedList(inspectedItems);
+            ui.renderInspectedList(inspectedItems);
         } catch (e) {
-            inspectionResultDiv.innerHTML = `<div class="item-entry" style="color: var(--error-color);"><strong>Error:</strong> Invalid or corrupted Rarity code.</div>`;
-            console.error("Inspection error:", e);
+            ui.renderInspectionError(e);
         }
     };
 
-    // --- EVENT LISTENERS ---
-    magicUrlInput.addEventListener('paste', () => setTimeout(handleUrlInput, 0));
-    magicUrlInput.addEventListener('keyup', handleUrlInput);
-    addItemBtn.addEventListener('click', addItem);
-    generateCodeBtn.addEventListener('click', generateRarityCode);
-    copyCodeBtn.addEventListener('click', () => {
-        if (!outputCodeTextarea.value) return;
-        outputCodeTextarea.select();
-        document.execCommand('copy');
-        alert('Code copied to clipboard!');
+    const handleGenerateSuggestion = () => {
+        const title = ui.elements.packTitle.value.trim();
+        const author = ui.elements.packAuthor.value.trim();
+        const icon = ui.elements.packIcon.value.trim();
+        if (!title || !author) {
+            alert('Pack Title and Author Name are required.');
+            return;
+        }
+        
+        const packData = { title, author, icon, items };
+        const submissionText = ui.generateSubmissionText(packData, RarityCoder.generateCode(items));
+        ui.showSubmissionContent(submissionText, githubRepoURL);
+    };
+
+    // --- Initial Setup ---
+    ui.renderItemList(items, () => {});
+    ui.renderNotablePacks(notablePacks, (packItems) => {
+        if (confirm("This will add the pack's items to your current list. Continue?")) {
+            items.push(...packItems);
+            ui.renderItemList(items, (index) => {
+                items.splice(index, 1);
+                ui.renderItemList(items, () => {});
+            });
+            ui.switchTab('generator');
+        }
+    }, (code) => {
+        ui.copyToClipboard(code, "Pack import code copied!");
     });
-    inspectBtn.addEventListener('click', inspectCode);
-    
-    // Initial render
-    renderItemList();
 });
