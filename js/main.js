@@ -1,13 +1,13 @@
 import { notablePacks } from './packs/notable-packs.js';
-import * RarityCoder from './modules/rarity-coder.js';
-import * UIManager from './modules/ui-manager.js';
-import * WowheadAPI from './modules/wowhead-api.js';
+import RarityCoder from './modules/rarity-coder.js';
+import UIManager from './modules/ui-manager.js';
+import WowheadAPI from './modules/wowhead-api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- Application State ---
     let items = [];
     const ui = UIManager(document);
-    const githubRepoURL = "https://github.com/asadomeio/Rarity-generator"; // Replace with your actual repo URL
+    const githubRepoURL = "https://github.com/asadomeio/Rarity-generator";
 
     // --- Core Event Listeners ---
     ui.elements.magicUrlInput.addEventListener('paste', () => setTimeout(handleUrlInput, 0));
@@ -26,14 +26,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Suggestion Modal Listeners ---
-    ui.elements.suggestPackBtn.addEventListener('click', () => ui.openSuggestionModal());
+    ui.elements.suggestPackBtn.addEventListener('click', () => ui.openSuggestionModal(items));
     ui.elements.modalCloseBtn.addEventListener('click', () => ui.closeSuggestionModal());
     ui.elements.modalOverlay.addEventListener('click', (e) => {
         if (e.target === ui.elements.modalOverlay) {
             ui.closeSuggestionModal();
         }
     });
-    ui.elements.generateSuggestionBtn.addEventListener('click', handleGenerateSuggestion);
+    ui.elements.generateSuggestionBtn.addEventListener('click', () => handleGenerateSuggestion(items));
     ui.elements.copySubmissionBtn.addEventListener('click', () => {
         ui.copyToClipboard(ui.elements.submissionCode.value, "Submission code copied!");
     });
@@ -55,11 +55,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        ui.showSpinner(ui.elements.addItemBtn);
+        ui.showSpinnerOnButton(ui.elements.addItemBtn);
         const name = await WowheadAPI.fetchItemName(itemID);
-        ui.hideSpinner(ui.elements.addItemBtn, "Add Item to List");
+        ui.hideSpinnerOnButton(ui.elements.addItemBtn, "Add Item to List");
         
         if (!name) {
+            ui.elements.itemNameInput.value = '';
             alert(`Could not automatically fetch the name for Item ID ${itemID}. Please enter it manually.`);
             return;
         }
@@ -107,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const handleGenerateSuggestion = () => {
+    const handleGenerateSuggestion = async (currentItems) => {
         const title = ui.elements.packTitle.value.trim();
         const author = ui.elements.packAuthor.value.trim();
         const icon = ui.elements.packIcon.value.trim();
@@ -115,21 +116,29 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Pack Title and Author Name are required.');
             return;
         }
-        
-        const packData = { title, author, icon, items };
-        const submissionText = ui.generateSubmissionText(packData, RarityCoder.generateCode(items));
+
+        // Fetch all NPC names for the submission text
+        ui.showSpinnerOnButton(ui.elements.generateSuggestionBtn);
+        const itemsWithNpcNames = await WowheadAPI.fetchNpcNamesForPack(currentItems);
+        ui.hideSpinnerOnButton(ui.elements.generateSuggestionBtn, "Generate Submission Code");
+
+        const packData = { title, author, icon, items: itemsWithNpcNames };
+        const submissionText = ui.generateSubmissionText(packData, RarityCoder.generateCode(currentItems));
         ui.showSubmissionContent(submissionText, githubRepoURL);
     };
 
     // --- Initial Setup ---
-    ui.renderItemList(items, () => {});
+    const handleRemoveItem = (index) => {
+        items.splice(index, 1);
+        ui.renderItemList(items, handleRemoveItem);
+    };
+    
+    ui.renderItemList(items, handleRemoveItem);
+
     ui.renderNotablePacks(notablePacks, (packItems) => {
         if (confirm("This will add the pack's items to your current list. Continue?")) {
             items.push(...packItems);
-            ui.renderItemList(items, (index) => {
-                items.splice(index, 1);
-                ui.renderItemList(items, () => {});
-            });
+            ui.renderItemList(items, handleRemoveItem);
             ui.switchTab('generator');
         }
     }, (code) => {
