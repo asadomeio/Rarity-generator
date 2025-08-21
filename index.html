@@ -5,55 +5,101 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rarity Code Generator & Inspector</title>
     
-    <!-- Link to the external stylesheet -->
     <link rel="stylesheet" href="css/style.css">
     
-    <!-- Wowhead Tooltip Script: Required for item icons, names, and rarity colors -->
     <script>const whTooltips = {colorLinks: true, iconizeLinks: true, renameLinks: true};</script>
     <script src="https://wow.zamimg.com/js/tooltips.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>Rarity Code Generator</h1>
-        
-        <div class="magic-input-wrapper">
-            <label for="magicUrlInput">Paste a Wowhead URL to autofill</label>
-            <input type="text" id="magicUrlInput" placeholder="e.g., https://www.wowhead.com/item=50818/reins-of-the-invincible">
-            <span class="feedback-icon success">✓</span>
-            <span class="feedback-icon error">✗</span>
-        </div>
-        
-        <h2>Manual Entry</h2>
-        <div class="manual-entry-grid">
-            <div><label for="itemName">Item Name</label><input type="text" id="itemName"></div>
-            <div><label for="itemID">Item ID</label><input type="number" id="itemID"></div>
-            <div><label for="npcIDs">NPC IDs (comma-separated)</label><input type="text" id="npcIDs"></div>
-            <div><label for="itemChance">Chance (e.g., 100 for 1%)</label><input type="number" id="itemChance"></div>
-        </div>
-        <button id="addItemBtn">Add Item to List</button>
+        <header class="app-header">
+            <h1>Rarity Code Generator</h1>
+            <nav class="app-tabs">
+                <button class="tab-button active" data-tab="generator">Generator</button>
+                <button class="tab-button" data-tab="packs">Notable Packs</button>
+            </nav>
+        </header>
 
-        <h2>Items to Export</h2>
-        <div id="itemList"><p class="placeholder-text">No items added yet.</p></div>
+        <!-- Main content area for tabs -->
+        <main>
+            <!-- Generator Tab Content -->
+            <div class="tab-content active" id="generator-content">
+                <div class="magic-input-wrapper">
+                    <label for="magicUrlInput">Paste a Wowhead URL to autofill</label>
+                    <input type="text" id="magicUrlInput" placeholder="e.g., https://www.wowhead.com/item=50818/reins-of-the-invincible">
+                    <span class="feedback-icon success">✓</span>
+                    <span class="feedback-icon error">✗</span>
+                </div>
+                
+                <h2>Manual Entry</h2>
+                <div class="manual-entry-grid">
+                    <div><label for="itemName">Item Name</label><input type="text" id="itemName" placeholder="Autofilled from ID"></div>
+                    <div><label for="itemID">Item ID</label><input type="number" id="itemID"></div>
+                    <div><label for="npcIDs">NPC IDs (comma-separated)</label><input type="text" id="npcIDs"></div>
+                    <div><label for="itemChance">Chance (e.g., 100 for 1%)</label><input type="number" id="itemChance"></div>
+                </div>
+                <button id="addItemBtn">Add Item to List</button>
 
-        <button id="generateCodeBtn">Generate Import Code</button>
-        <textarea id="outputCode" readonly style="margin-top: 15px;"></textarea>
-        <button id="copyCodeBtn">Copy Code</button>
+                <h2>Items to Export</h2>
+                <div id="itemList"><p class="placeholder-text">No items added yet.</p></div>
 
-        <hr class="divider">
+                <div class="action-buttons">
+                    <button id="generateCodeBtn">Generate Import Code</button>
+                    <button id="suggestPackBtn" class="secondary">Suggest as Community Pack</button>
+                </div>
+                <textarea id="outputCode" readonly></textarea>
+                <button id="copyCodeBtn">Copy Code</button>
 
-        <h2>Code Inspector</h2>
-        <label for="inspectInput">Paste a Rarity code here to view its contents</label>
-        <textarea id="inspectInput"></textarea>
-        <button id="inspectBtn">Inspect Code</button>
-        
-        <h2>Inspected Items</h2>
-        <div id="inspectionResult"><p class="placeholder-text">No code inspected yet.</p></div>
+                <hr class="divider">
+
+                <h2>Code Inspector</h2>
+                <label for="inspectInput">Paste a Rarity code here to view its contents</label>
+                <textarea id="inspectInput"></textarea>
+                <button id="inspectBtn">Inspect Code</button>
+                
+                <h2>Inspected Items</h2>
+                <div id="inspectionResult"><p class="placeholder-text">No code inspected yet.</p></div>
+            </div>
+
+            <!-- Notable Packs Tab Content -->
+            <div class="tab-content" id="packs-content">
+                <h2>Community Packs</h2>
+                <p class="subtitle">A collection of useful, pre-made packs. Click on a pack to see its contents.</p>
+                <div id="packsList">
+                    <!-- Pack cards will be dynamically inserted here by ui-manager.js -->
+                </div>
+            </div>
+        </main>
     </div>
 
+    <!-- Modal for Suggest a Pack -->
+    <div class="modal-overlay hidden" id="suggestion-modal">
+        <div class="modal-content">
+            <button class="modal-close-btn" id="modal-close">&times;</button>
+            <h2>Suggest a Community Pack</h2>
+            <p>Fill out the details for your pack. The item list you built will be included automatically.</p>
+            <div class="modal-form">
+                <div><label for="packTitle">Pack Title</label><input type="text" id="packTitle" required></div>
+                <div><label for="packAuthor">Your Name/Alias</label><input type="text" id="packAuthor" required></div>
+                <div><label for="packIcon">Featured Icon URL (Optional)</label><input type="text" id="packIcon" placeholder="Right-click an item icon and 'Copy Image Address'"></div>
+            </div>
+            <button id="generateSuggestionBtn">Generate Submission Code</button>
+            <div class="submission-output hidden" id="submission-output">
+                <h3>Submission Ready!</h3>
+                <p>Please copy the code below and share it with us via a GitHub Issue.</p>
+                <textarea id="submissionCode" readonly></textarea>
+                <div class="action-buttons">
+                    <button id="copySubmissionBtn">Copy Submission Code</button>
+                    <a href="#" target="_blank" id="githubIssueLink" class="button-link">Open Suggestion on GitHub</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- External Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
     
-    <!-- Link to the external JavaScript file -->
-    <script src="js/main.js"></script>
+    <!-- Main application script loaded as a module -->
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>
