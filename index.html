@@ -17,6 +17,7 @@
             <nav class="app-tabs">
                 <button class="tab-button active" data-tab="generator">Generator</button>
                 <button class="tab-button" data-tab="packs">Notable Packs</button>
+                <button class="tab-button" data-tab="quick">Quick Import</button>
             </nav>
         </header>
 
@@ -42,7 +43,7 @@
                         </select>
                     </div>
                     <div><label for="itemID">Item ID</label><input type="number" id="itemID"></div>
-                    <div><label for="itemName">Item Name</label><input type="text" id="itemName" placeholder="Autofilled from ID"></div>
+                    <div><label for="itemName">Item Name <small>(Leave blank to autofill)</small></label><input type="text" id="itemName"></div>
                     <div><label for="npcIDs">NPC IDs (comma-separated)</label><input type="text" id="npcIDs"></div>
                     <div><label for="itemChance">Chance (e.g., 100 for 1%)</label><input type="number" id="itemChance"></div>
                 </div>
@@ -70,9 +71,26 @@
             <div class="tab-content" id="packs-content">
                 <h2>Community Packs</h2>
                 <p class="subtitle">A collection of useful, pre-made packs. Click on a pack to see its contents.</p>
-                <div id="packsList">
-                    <!-- Pack cards will be dynamically inserted here -->
+                <div id="packsList"></div>
+            </div>
+
+            <!-- Quick Import Tab Content -->
+            <div class="tab-content" id="quick-content">
+                <h2>Quick Bulk Import</h2>
+                <p class="subtitle">Paste item data in the format below, separated by "---".</p>
+                <div class="format-guide">
+                    <p><strong>Format per item:</strong></p>
+                    <pre><code>Line 1: Wowhead Item URL<br>Line 2: Wowhead NPC URL(s), comma-separated<br>Line 3: Chance (Optional, defaults to 100)</code></pre>
                 </div>
+                <textarea id="quickImportInput" placeholder="Paste your item blocks here..."></textarea>
+                <button id="quickProcessBtn">Process & Add to List</button>
+                
+                <h2>Processed Items</h2>
+                <div id="quickItemList"><p class="placeholder-text">No items processed yet.</p></div>
+
+                <button id="quickGenerateBtn">Generate Import Code</button>
+                <textarea id="quickOutputCode" readonly></textarea>
+                <button id="quickCopyBtn">Copy Code</button>
             </div>
         </main>
     </div>
