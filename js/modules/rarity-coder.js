@@ -1,9 +1,11 @@
 function serializeToLua(itemList) {
     const itemsString = itemList.map(item => {
-        const npcTable = `{${item.npcIDs.map((id, i) => `[${i + 1}]=${id}`).join(',')},}`;
+        // Add a trailing comma after each NPC ID
+        const npcTable = `{${item.npcIDs.map((id, i) => `[${i + 1}]=${id},`).join('')}}`;
         const escapedName = item.name.replace(/"/g, '\\"');
-        return `{["type"]="${item.type}",["chance"]=${item.chance},["itemID"]=${item.itemID},["name"]="${escapedName}",["npcs"]=${npcTable},["method"]="NPC",}`;
-    }).join(',');
+        // Add a trailing comma after the entire item object's closing brace
+        return `{["type"]="${item.type}",["chance"]=${item.chance},["itemID"]=${item.itemID},["name"]="${escapedName}",["npcs"]=${npcTable},["method"]="NPC",},`;
+    }).join(''); // Join without any separator, as each item already has a trailing comma
     return `return {${itemsString}}`;
 }
 
@@ -71,7 +73,9 @@ function parseLuaString(luaString) {
                 itemData.type = typeMatch ? typeMatch[1] : 'ITEM';
                 items.push(itemData);
             }
+            // Move to the character after the closing brace, skipping the comma
             currentItemString = '';
+            if (cleanString[i+1] === ',') i++;
         }
     }
     return items;
