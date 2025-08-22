@@ -48,6 +48,7 @@ h2 { font-size: 1.5em; margin-top: 40px; }
 
 /* --- Forms & Inputs --- */
 label { display: block; font-weight: 600; margin-bottom: 8px; color: var(--text-color-darker); }
+label small { font-weight: normal; font-style: italic; }
 .magic-input-wrapper { position: relative; margin-bottom: 20px; }
 .feedback-icon {
     position: absolute; right: 15px; top: 50%;
@@ -75,51 +76,4 @@ input.error { border-color: var(--error-color); }
 
 /* --- Buttons --- */
 button {
-    background-color: var(--primary-color); color: #000; padding: 10px 20px;
-    border: none; border-radius: 6px; cursor: pointer; font-family: inherit;
-    font-size: 1rem; font-weight: 600; transition: all 0.2s; margin-top: 10px;
-}
-button:hover {
-    background-color: var(--primary-hover-color); transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 201, 255, 0.2);
-}
-
-/* --- Lists & Content Blocks --- */
-#itemList, #inspectionResult {
-    border: 1px solid var(--border-color); padding: 0; border-radius: 6px;
-    min-height: 50px; margin: 20px 0; background-color: rgba(0,0,0,0.1);
-}
-.item-entry {
-    border-bottom: 1px solid var(--border-color); padding: 12px 15px;
-    display: flex; justify-content: space-between; align-items: center;
-}
-.item-entry:last-child { border-bottom: none; }
-.item-info a { text-decoration: none; font-weight: 600; }
-.item-info small { color: var(--text-color-darker); font-size: 0.85em; display: block; }
-.remove-btn {
-    background-color: #444; color: #fff; font-size: 0.75em; padding: 4px 10px;
-    font-weight: normal; border: 1px solid #666;
-}
-.placeholder-text { padding: 15px; color: var(--text-color-darker); }
-textarea { height: 120px; font-family: monospace; font-size: 0.9em; margin-top: 15px; }
-.divider { border: 0; border-top: 1px solid var(--border-color); margin: 40px 0; }
-
-/* --- Notable Packs Tab --- */
-.pack-card {
-    background-color: var(--input-background); border: 1px solid var(--border-color);
-    border-radius: 6px; margin-bottom: 15px; cursor: pointer;
-    transition: background-color 0.2s; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-}
-.pack-card:hover { background-color: #051C30; }
-.pack-header { display: flex; align-items: center; padding: 15px; gap: 15px; }
-.pack-header img { width: 40px; height: 40px; border-radius: 4px; }
-.pack-header-info { flex-grow: 1; }
-.pack-header-info strong { font-size: 1.1em; color: var(--text-color); }
-.pack-header-info small { color: var(--text-color-darker); display: block; }
-.pack-content {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.4s ease-out;
-    background-color: rgba(0,0,0,0.1);
-}
-.pack-content .action-buttons { padding: 0 15px 15px 15px; }
+    background-color: var(--primary-color); color: #000; padding
