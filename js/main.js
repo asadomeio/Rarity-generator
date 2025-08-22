@@ -78,15 +78,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         for (const block of blocks) {
             const lines = block.trim().split('\n').map(l => l.trim());
+            if (lines.length < 2) continue; // Skip blocks without at least item and NPC URLs
+
             const itemUrl = lines[0];
-            const npcUrls = lines[1] || '';
+            const npcUrlsLine = lines[1];
             const chance = parseInt(lines[2], 10) || 100;
             
             const itemData = WowheadAPI.parseUrl(itemUrl);
             if (!itemData || itemData.type !== 'item') continue;
 
-            const npcIDs = npcUrls.split(/[\s,]+/).map(url => WowheadAPI.parseUrl(url)?.id).filter(id => id);
-            if(npcIDs.length === 0) continue;
+            // CORRECTED NPC URL PARSING LOGIC
+            const npcIDs = npcUrlsLine.split(',') // 1. Split by comma first
+                .map(url => url.trim())           // 2. Trim whitespace from each potential URL
+                .map(url => WowheadAPI.parseUrl(url)?.id) // 3. Parse the clean URL
+                .filter(id => id);                       // 4. Filter out any failures
+                
+            if (npcIDs.length === 0) continue;
 
             const name = await WowheadAPI.fetchItemName(itemData.id);
             if (!name) continue;
@@ -116,10 +123,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const author = ui.elements.packAuthor.value.trim();
         const icon = ui.elements.packIcon.value.trim();
         if (!title || !author) {
-            alert('Pack Title and Author Name are required.');
-            return;
+            alert('Pack Title and Author Name are required.'); return;
         }
-
         const packData = { title, author, icon, items };
         const submissionText = ui.generateSubmissionText(packData, RarityCoder.generateCode(items));
         ui.showSubmissionContent(submissionText, githubRepoURL);
@@ -143,7 +148,6 @@ document.addEventListener('DOMContentLoaded', () => {
     ui.elements.copySubmissionBtn.addEventListener('click', () => {
         ui.copyToClipboard(ui.elements.submissionCode.value, "Submission code copied!");
     });
-
     ui.elements.tabs.forEach(tab => {
         tab.addEventListener('click', () => ui.switchTab(tab.dataset.tab));
     });
