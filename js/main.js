@@ -3,6 +3,7 @@ import RarityCoder from './modules/rarity-coder.js';
 import UIManager from './modules/ui-manager.js';
 import WowheadAPI from './modules/wowhead-api.js';
 
+
 document.addEventListener('DOMContentLoaded', () => {
     let items = [];
     let quickImportItems = [];
