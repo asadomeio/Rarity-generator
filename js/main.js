@@ -5,6 +5,7 @@ import WowheadAPI from './modules/wowhead-api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     let items = [];
+    let quickImportItems = [];
     const ui = UIManager(document);
 
     function handleUrlInput() {
@@ -35,8 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const chance = parseInt(ui.elements.itemChanceInput.value, 10);
 
         if (!name || isNaN(itemID) || npcIDs.length === 0 || isNaN(chance) || !type) {
-            alert('Please ensure all required fields are filled correctly.');
-            return;
+            alert('Please ensure all required fields are filled correctly.'); return;
         }
 
         items.push({ type, name, itemID, npcIDs, chance });
@@ -70,6 +70,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function handleProcessQuickImport() {
+        const text = ui.elements.quickImportInput.value.trim();
+        const blocks = text.split('---').filter(b => b.trim() !== '');
+        quickImportItems = []; // Reset preview list
+
+        for (const block of blocks) {
+            const lines = block.trim().split('\n').map(l => l.trim());
+            const itemUrl = lines[0];
+            const npcUrls = lines[1] || '';
+            const chance = parseInt(lines[2], 10) || 100;
+            
+            const itemData = WowheadAPI.parseUrl(itemUrl);
+            if (!itemData || itemData.type !== 'item') continue;
+
+            const npcIDs = npcUrls.split(/[\s,]+/).map(url => WowheadAPI.parseUrl(url)?.id).filter(id => id);
+            if(npcIDs.length === 0) continue;
+
+            const name = await WowheadAPI.fetchItemName(itemData.id);
+            if (!name) continue;
+
+            quickImportItems.push({ type: 'MOUNT', name, itemID: parseInt(itemData.id), npcIDs, chance });
+        }
+        
+        ui.renderQuickImportPreview(quickImportItems, (index, newType) => {
+            quickImportItems[index].type = newType;
+        });
+        ui.elements.quickImportInput.value = '';
+    }
+    
+    function handleGenerateQuickImportCode() {
+        if (quickImportItems.length === 0) { alert('Process some items first.'); return; }
+        const code = RarityCoder.generateCode(quickImportItems);
+        ui.copyToClipboard(code, "Quick Import code copied!");
+        quickImportItems = [];
+        ui.renderQuickImportPreview(quickImportItems, ()=>{});
+    }
+
     // --- Event Listeners ---
     ui.elements.magicUrlInput.addEventListener('paste', () => setTimeout(handleUrlInput, 0));
     ui.elements.magicUrlInput.addEventListener('keyup', handleUrlInput);
@@ -77,6 +114,8 @@ document.addEventListener('DOMContentLoaded', () => {
     ui.elements.generateCodeBtn.addEventListener('click', handleGenerateCode);
     ui.elements.copyCodeBtn.addEventListener('click', handleCopyCode);
     ui.elements.inspectBtn.addEventListener('click', handleInspectCode);
+    ui.elements.processQuickImportBtn.addEventListener('click', handleProcessQuickImport);
+    ui.elements.generateQuickImportCodeBtn.addEventListener('click', handleGenerateQuickImportCode);
 
     ui.elements.tabs.forEach(tab => {
         tab.addEventListener('click', () => ui.switchTab(tab.dataset.tab));
@@ -85,14 +124,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Initial Setup ---
     ui.renderItemList(items, handleRemoveItem);
     ui.renderNotablePacks(notablePacks, 
-        (packItems) => { // onAdd callback
+        (packItems) => {
             if (confirm("This will add the pack's items to your current list. Continue?")) {
                 items.push(...packItems);
                 ui.renderItemList(items, handleRemoveItem);
                 ui.switchTab('generator');
             }
         },
-        (code) => { // onCopy callback
+        (code) => {
             ui.copyToClipboard(code, "Pack import code copied!");
         }
     );
