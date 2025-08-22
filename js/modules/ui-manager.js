@@ -1,6 +1,7 @@
 import WowheadAPI from './wowhead-api.js';
 
 function UIManager(document) {
+    // All DOM element selections are grouped here for clarity.
     const elements = {
         tabs: document.querySelectorAll('.tab-button'),
         tabContents: document.querySelectorAll('.tab-content'),
@@ -25,11 +26,21 @@ function UIManager(document) {
         generateQuickImportCodeBtn: document.getElementById('generateQuickImportCodeBtn'),
     };
 
+    /**
+     * Handles the logic of switching between tabs.
+     * @param {string} tabName - The name of the tab to activate (e.g., 'generator').
+     */
     function switchTab(tabName) {
+        // Step 1: Hide everything. Remove 'active' class from all tabs and content panels.
         elements.tabContents.forEach(content => content.classList.remove('active'));
         elements.tabs.forEach(tab => tab.classList.remove('active'));
-        document.getElementById(`${tabName}-content`).classList.add('active');
-        document.querySelector(`.tab-button[data-tab="${tabName}"]`).classList.add('active');
+
+        // Step 2: Show the correct one. Add 'active' class to the clicked tab and corresponding content.
+        const activeContent = document.getElementById(`${tabName}-content`);
+        const activeTab = document.querySelector(`.tab-button[data-tab="${tabName}"]`);
+
+        if (activeContent) activeContent.classList.add('active');
+        if (activeTab) activeTab.classList.add('active');
     }
 
     function createItemEntry(item, isQuickPreview = false) {
@@ -118,8 +129,14 @@ function UIManager(document) {
         });
     }
 
+    // Expose the public functions and elements.
     return {
-        elements, switchTab, renderItemList, renderQuickImportPreview, renderInspectedList, renderNotablePacks,
+        elements,
+        switchTab, // Ensure this function is exported.
+        renderItemList,
+        renderQuickImportPreview,
+        renderInspectedList,
+        renderNotablePacks,
         clearManualInputs: () => {
             [elements.magicUrlInput, elements.itemNameInput, elements.itemIDInput, elements.npcIDsInput, elements.itemChanceInput].forEach(i => i.value = '');
             elements.magicUrlInput.className = ''; elements.magicUrlInput.focus();
