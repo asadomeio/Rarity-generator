@@ -3,11 +3,11 @@ import RarityCoder from './modules/rarity-coder.js';
 import UIManager from './modules/ui-manager.js';
 import WowheadAPI from './modules/wowhead-api.js';
 
-
 document.addEventListener('DOMContentLoaded', () => {
     let items = [];
     let quickImportItems = [];
     const ui = UIManager(document);
+    const githubRepoURL = "https://github.com/asadomeio/rarity-code-generator"; // Replace with your actual repo URL
 
     function handleUrlInput() {
         const data = WowheadAPI.parseUrl(ui.elements.magicUrlInput.value);
@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleProcessQuickImport() {
         const text = ui.elements.quickImportInput.value.trim();
         const blocks = text.split('---').filter(b => b.trim() !== '');
-        quickImportItems = []; // Reset preview list
+        quickImportItems = [];
 
         for (const block of blocks) {
             const lines = block.trim().split('\n').map(l => l.trim());
@@ -97,7 +97,10 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.renderQuickImportPreview(quickImportItems, (index, newType) => {
             quickImportItems[index].type = newType;
         });
-        ui.elements.quickImportInput.value = '';
+
+        if (ui.elements.clearInputCheckbox.checked) {
+            ui.elements.quickImportInput.value = '';
+        }
     }
     
     function handleGenerateQuickImportCode() {
@@ -106,6 +109,20 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.copyToClipboard(code, "Quick Import code copied!");
         quickImportItems = [];
         ui.renderQuickImportPreview(quickImportItems, ()=>{});
+    }
+
+    function handleGenerateSuggestion() {
+        const title = ui.elements.packTitle.value.trim();
+        const author = ui.elements.packAuthor.value.trim();
+        const icon = ui.elements.packIcon.value.trim();
+        if (!title || !author) {
+            alert('Pack Title and Author Name are required.');
+            return;
+        }
+
+        const packData = { title, author, icon, items };
+        const submissionText = ui.generateSubmissionText(packData, RarityCoder.generateCode(items));
+        ui.showSubmissionContent(submissionText, githubRepoURL);
     }
 
     // --- Event Listeners ---
@@ -117,6 +134,15 @@ document.addEventListener('DOMContentLoaded', () => {
     ui.elements.inspectBtn.addEventListener('click', handleInspectCode);
     ui.elements.processQuickImportBtn.addEventListener('click', handleProcessQuickImport);
     ui.elements.generateQuickImportCodeBtn.addEventListener('click', handleGenerateQuickImportCode);
+    ui.elements.suggestPackBtn.addEventListener('click', () => ui.openSuggestionModal(items));
+    ui.elements.modalCloseBtn.addEventListener('click', ui.closeSuggestionModal);
+    ui.elements.modalOverlay.addEventListener('click', (e) => {
+        if (e.target === ui.elements.modalOverlay) ui.closeSuggestionModal();
+    });
+    ui.elements.generateSuggestionBtn.addEventListener('click', handleGenerateSuggestion);
+    ui.elements.copySubmissionBtn.addEventListener('click', () => {
+        ui.copyToClipboard(ui.elements.submissionCode.value, "Submission code copied!");
+    });
 
     ui.elements.tabs.forEach(tab => {
         tab.addEventListener('click', () => ui.switchTab(tab.dataset.tab));
