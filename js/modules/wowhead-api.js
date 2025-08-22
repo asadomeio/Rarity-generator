@@ -1,9 +1,10 @@
 const itemNameCache = new Map();
 
 function parseUrl(url) {
-    const match = url.match(/wowhead\.com\/(item|npc|zone|spell)=(\d+)/);
+    const match = url.match(/wowhead\.com\/([a-z]{2}\/)?(item|npc)=(\d+)/);
     if (match) {
-        return { type: match[1], id: match[2] };
+        // match[2] is the type ('item' or 'npc'), match[3] is the ID
+        return { type: match[2], id: match[3] };
     }
     return null;
 }
