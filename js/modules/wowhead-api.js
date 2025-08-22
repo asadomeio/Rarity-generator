@@ -1,7 +1,8 @@
 const itemNameCache = new Map();
 
 function parseUrl(url) {
-    const match = url.match(/wowhead\.com\/([a-z]{2}\/)?(item|npc)=(\d+)/);
+    // This more robust regex handles subdomains (like www, es, pt) and language codes.
+    const match = url.match(/(?:www\.)?wowhead\.com\/([a-z]{2}\/)?(item|npc)=(\d+)/);
     if (match) {
         // match[2] is the type ('item' or 'npc'), match[3] is the ID
         return { type: match[2], id: match[3] };
@@ -31,10 +32,11 @@ function fetchItemName(itemID) {
             document.body.removeChild(lure);
             console.error(`Timed out fetching name for item ID: ${itemID}`);
             resolve(null);
-        }, 2000);
+        }, 3000); // Increased timeout for slower connections
 
         const observer = new MutationObserver(() => {
-            if (lure.textContent && !lure.textContent.includes('#')) {
+            // A more robust check to see if Wowhead has renamed the link
+            if (lure.textContent && lure.textContent !== lure.href && !lure.textContent.includes('#')) {
                 clearTimeout(timeout);
                 const itemName = lure.textContent;
                 itemNameCache.set(itemID, itemName);
