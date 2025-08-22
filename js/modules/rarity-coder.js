@@ -1,11 +1,9 @@
 function serializeToLua(itemList) {
     const itemsString = itemList.map(item => {
-        // Add a trailing comma after each NPC ID
         const npcTable = `{${item.npcIDs.map((id, i) => `[${i + 1}]=${id},`).join('')}}`;
         const escapedName = item.name.replace(/"/g, '\\"');
-        // Add a trailing comma after the entire item object's closing brace
         return `{["type"]="${item.type}",["chance"]=${item.chance},["itemID"]=${item.itemID},["name"]="${escapedName}",["npcs"]=${npcTable},["method"]="NPC",},`;
-    }).join(''); // Join without any separator, as each item already has a trailing comma
+    }).join('');
     return `return {${itemsString}}`;
 }
 
@@ -20,6 +18,7 @@ function rarityEncode(data) {
 }
 
 function generateCode(items) {
+    if (!items || items.length === 0) return "";
     try {
         const luaString = serializeToLua(items);
         const compressed = pako.deflate(luaString);
@@ -73,9 +72,8 @@ function parseLuaString(luaString) {
                 itemData.type = typeMatch ? typeMatch[1] : 'ITEM';
                 items.push(itemData);
             }
-            // Move to the character after the closing brace, skipping the comma
-            currentItemString = '';
             if (cleanString[i+1] === ',') i++;
+            currentItemString = '';
         }
     }
     return items;
