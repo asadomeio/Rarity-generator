@@ -52,7 +52,10 @@
                 <h2>Items to Export</h2>
                 <div id="itemList"><p class="placeholder-text">No items added yet.</p></div>
 
-                <button id="generateCodeBtn">Generate Import Code</button>
+                <div class="action-buttons">
+                    <button id="generateCodeBtn">Generate Import Code</button>
+                    <button id="suggestPackBtn" class="secondary">Suggest as Community Pack</button>
+                </div>
                 <textarea id="outputCode" readonly></textarea>
                 <button id="copyCodeBtn">Copy Code</button>
 
@@ -85,6 +88,10 @@
                     Line 3: Chance (optional, defaults to 100)
                 </div>
                 <textarea id="quickImportInput" placeholder="https://www.wowhead.com/item=32458&#10;https://www.wowhead.com/npc=19622&#10;100&#10;---&#10;https://www.wowhead.com/item=50818&#10;https://www.wowhead.com/npc=36597"></textarea>
+                <div class="quick-import-options">
+                    <input type="checkbox" id="clearInputCheckbox" checked>
+                    <label for="clearInputCheckbox">Clear input after processing</label>
+                </div>
                 <button id="processQuickImportBtn">Process & Add to Preview</button>
 
                 <h2>Preview & Finalize</h2>
@@ -93,14 +100,32 @@
             </div>
         </main>
     </div>
+
+    <!-- Modal for Suggest a Pack -->
+    <div class="modal-overlay hidden" id="suggestion-modal">
+        <div class="modal-content">
+            <button class="modal-close-btn" id="modal-close">&times;</button>
+            <h2>Suggest a Community Pack</h2>
+            <p>Fill out the details for your pack. The item list you built will be included automatically.</p>
+            <div class="modal-form">
+                <div><label for="packTitle">Pack Title</label><input type="text" id="packTitle" required></div>
+                <div><label for="packAuthor">Your Name/Alias</label><input type="text" id="packAuthor" required></div>
+                <div><label for="packIcon">Featured Icon URL (Optional)</label><input type="text" id="packIcon" placeholder="Right-click an item icon and 'Copy Image Address'"></div>
+            </div>
+            <button id="generateSuggestionBtn">Generate Submission Code</button>
+            <div class="submission-output hidden" id="submission-output">
+                <h3>Submission Ready!</h3>
+                <p>Please copy the code below and share it with us via a GitHub Issue.</p>
+                <textarea id="submissionCode" readonly></textarea>
+                <div class="action-buttons">
+                    <button id="copySubmissionBtn">Copy Submission Code</button>
+                    <a href="#" target="_blank" id="githubIssueLink" class="button-link">Open Suggestion on GitHub</a>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
     <script type="module" src="js/main.js"></script>
-
-    <!-- ### INÍCIO DA FERRAMENTA DE DEBUG ### -->
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
-    <!-- ### FIM DA FERRAMENTA DE DEBUG ### -->
-
 </body>
 </html>
